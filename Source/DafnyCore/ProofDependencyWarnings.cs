@@ -160,12 +160,23 @@ public class ProofDependencyWarnings {
 
       manager.ProofDependenciesById.TryGetValue(partialAssert!.Id, out var assertDepProvenByFact);
 
-      var factAlreadyInByBlock = assertDepProvenByFact != null && (fact == assertDepProvenByFact || assertDepProvenByFact.Range.Intersects(fact.Range));
-      if (factAlreadyInByBlock) {
+
+      var factAlreadyInByBlock1 = assertDepProvenByFact != null && assertDepProvenByFact.Range.Contains(fact.Range);
+      if (factAlreadyInByBlock1) {
         continue;
       }
 
-      RangeToken range = null;
+      var factAlreadyInByBlock2 = assertDepProvenByFact is ProofObligationDependency { ProofObligation: AssertStatementDescription assertStatementDescription }
+                                  && assertStatementDescription.AssertStatement.Origin.Contains(fact.Range);
+      if (factAlreadyInByBlock2) {
+        continue;
+      }
+
+      if (fact == assertDepProvenByFact) {
+        continue;
+      }
+
+      IOrigin range = null;
       var factProvider = "";
       var factConsumer = "";
       var recommendation = "";
@@ -190,7 +201,7 @@ public class ProofDependencyWarnings {
 
       switch (assertDepProvenByFact) {
         case CallDependency call: {
-            factConsumer = $"precondtion{(call.call.Method.Req.Count > 1 ? "s" : "")} of the method call {call.Range.Next.TokenToString(options)}";
+            factConsumer = $"precondition{(call.call.Method.Req.Count > 1 ? "s" : "")} of the method call {call.Range.Next.TokenToString(options)}";
             break;
           }
         case ProofObligationDependency { ProofObligation: AssertStatementDescription }: {
